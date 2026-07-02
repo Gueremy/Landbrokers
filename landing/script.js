@@ -74,6 +74,39 @@ async function loadProyectos() {
     }
 }
 
+// Formulario de contacto → /api/leads
+document.getElementById('lead-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const msg = document.getElementById('lead-msg');
+    btn.disabled = true;
+    btn.innerHTML = 'Enviando... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
+    msg.style.display = 'none';
+
+    try {
+        const res = await fetch(`${API_URL}/api/leads`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre: document.getElementById('lead-nombre').value.trim(),
+                email: document.getElementById('lead-email').value.trim(),
+                telefono: document.getElementById('lead-telefono').value.trim() || null,
+                mensaje: document.getElementById('lead-mensaje').value.trim() || null,
+            })
+        });
+        if (!res.ok) throw new Error();
+        msg.style.cssText = 'display:block; color:#155724; background:#d4edda; padding:12px; border-radius:4px;';
+        msg.textContent = '¡Mensaje enviado! Nos contactaremos a la brevedad.';
+        e.target.reset();
+    } catch {
+        msg.style.cssText = 'display:block; color:#721c24; background:#f8d7da; padding:12px; border-radius:4px;';
+        msg.innerHTML = 'Error al enviar. Contáctenos por <a href="https://wa.me/56982470858" target="_blank">WhatsApp</a>.';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Enviar Consulta <i class="fa-solid fa-paper-plane" style="margin-left:8px;"></i>';
+    }
+});
+
 function renderProyectoCard(p, index) {
     const delay = (index + 1) * 100;
     const estadoBadge = p.estado !== 'activo' ? `<span style="display:inline-block; margin-bottom:12px; padding:4px 12px; border-radius:2px; font-size:0.8rem; font-weight:600; text-transform:uppercase; background:${p.estado === 'vendido' ? '#c0392b' : '#f39c12'}; color:#fff;">${p.estado === 'vendido' ? 'Vendido' : 'Próximamente'}</span>` : '';

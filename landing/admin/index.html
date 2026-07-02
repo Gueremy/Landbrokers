@@ -166,9 +166,11 @@
         .btn-outline:hover { background: var(--color-light); }
         .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
         .btn-gold { background: var(--color-gold); color: var(--color-primary); }
+        .btn-gold:hover { background: #b8962e; }
 
-        /* ── Table ── */
-        table { width: 100%; border-collapse: collapse; background: var(--color-white); border-radius: 6px; overflow: hidden; }
+        /* ── Tables ── */
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; background: var(--color-white); border-radius: 6px; overflow: hidden; min-width: 560px; }
         th { background: var(--color-primary); color: #fff; padding: 12px 16px; text-align: left; font-weight: 500; font-size: 0.85rem; }
         td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); font-size: 0.9rem; }
         tr:last-child td { border-bottom: none; }
@@ -245,6 +247,69 @@
             border-radius: 4px;
         }
 
+        /* ── Imágenes ── */
+        .imagenes-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+            min-height: 20px;
+        }
+
+        .img-thumb {
+            position: relative;
+            width: 100px;
+            height: 80px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .img-thumb.portada { border-color: var(--color-gold); }
+        .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .img-portada-badge {
+            position: absolute;
+            top: 2px; left: 2px;
+            background: var(--color-gold);
+            color: var(--color-primary);
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 2px;
+            text-transform: uppercase;
+        }
+
+        .img-delete {
+            position: absolute;
+            top: 2px; right: 2px;
+            background: rgba(192,57,43,0.9);
+            border: none;
+            color: #fff;
+            border-radius: 2px;
+            cursor: pointer;
+            width: 20px; height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .img-upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .img-upload-row input[type="file"] {
+            font-size: 0.85rem;
+            max-width: 220px;
+        }
+
+        /* ── Section header ── */
         .section-header {
             display: flex;
             align-items: center;
@@ -275,6 +340,8 @@
             .form-grid { grid-template-columns: 1fr; }
             .modal { padding: 24px 16px; }
             .content { padding: 16px; }
+            .feature-row { grid-template-columns: 1fr auto; }
+            .feature-row input:last-of-type { grid-column: 1; }
         }
     </style>
 </head>
@@ -300,10 +367,10 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('proyectos')">
+        <button class="tab-btn active" onclick="switchTab('proyectos', this)">
             <i class="fa-solid fa-building"></i> Proyectos
         </button>
-        <button class="tab-btn" onclick="switchTab('leads')">
+        <button class="tab-btn" onclick="switchTab('leads', this)">
             <i class="fa-solid fa-envelope"></i> Leads <span id="leads-badge" style="display:none; background:var(--color-gold); color:var(--color-primary); border-radius:10px; padding:1px 7px; font-size:0.75rem; margin-left:6px;"></span>
         </button>
     </div>
@@ -317,20 +384,22 @@
                     <i class="fa-solid fa-plus"></i> Nuevo Proyecto
                 </button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Nombre</th>
-                        <th>Ubicación</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="proyectos-tbody">
-                    <tr><td colspan="5" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="proyectos-tbody">
+                        <tr><td colspan="5" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Tab Leads -->
@@ -338,22 +407,24 @@
             <div class="section-header">
                 <h2>Consultas recibidas</h2>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Teléfono</th>
-                        <th>Proyecto</th>
-                        <th>Mensaje</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="leads-tbody">
-                    <tr><td colspan="7" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Proyecto</th>
+                            <th>Mensaje</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-tbody">
+                        <tr><td colspan="7" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -425,6 +496,21 @@
         <button class="btn btn-outline btn-sm" onclick="addFeatureRow()">
             <i class="fa-solid fa-plus"></i> Agregar característica
         </button>
+
+        <!-- Imágenes (visible solo al editar) -->
+        <div id="imagenes-section" style="display:none; margin-top:28px; border-top:1px solid var(--color-border); padding-top:20px;">
+            <label style="font-weight:600; font-size:0.9rem; display:block; margin-bottom:12px;">Imágenes del proyecto</label>
+            <div class="imagenes-grid" id="imagenes-grid"></div>
+            <div class="img-upload-row">
+                <input type="file" id="img-file" accept="image/*">
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; white-space:nowrap;">
+                    <input type="checkbox" id="img-portada"> Es portada
+                </label>
+                <button class="btn btn-gold btn-sm" onclick="uploadImagen()">
+                    <i class="fa-solid fa-upload"></i> Subir imagen
+                </button>
+            </div>
+        </div>
 
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
@@ -501,11 +587,11 @@ document.getElementById('login-password').addEventListener('keydown', e => {
 });
 
 // ── Tabs ──
-function switchTab(name) {
+function switchTab(name, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
-    event.currentTarget.classList.add('active');
+    btn.classList.add('active');
 }
 
 // ── Proyectos ──
@@ -555,14 +641,17 @@ function openModalCrear() {
     document.getElementById('p-estado').value = 'activo';
     document.getElementById('p-orden').value = '';
     document.getElementById('features-list').innerHTML = '';
+    document.getElementById('imagenes-section').style.display = 'none';
     addFeatureRow();
     document.getElementById('modal-proyecto').classList.add('open');
 }
 
 async function openModalEditar(id) {
     try {
-        const res = await fetch(`${API}/api/proyectos/${proyectosData.find(p=>p.id===id)?.slug || id}`, { headers: authHeader() });
+        const slug = proyectosData.find(p => p.id === id)?.slug || id;
+        const res = await fetch(`${API}/api/proyectos/${slug}`);
         const p = await res.json();
+
         document.getElementById('modal-title').textContent = 'Editar Proyecto';
         document.getElementById('proyecto-id').value = p.id;
         document.getElementById('p-nombre').value = p.nombre || '';
@@ -577,8 +666,15 @@ async function openModalEditar(id) {
 
         const fl = document.getElementById('features-list');
         fl.innerHTML = '';
-        (p.proyecto_features || []).forEach(f => addFeatureRow(f.titulo, f.descripcion));
+        (p.proyecto_features || []).forEach(f => addFeatureRow(f.titulo, f.descripcion, f.id));
         if (!p.proyecto_features?.length) addFeatureRow();
+
+        // Mostrar sección de imágenes y cargarlas
+        document.getElementById('imagenes-section').style.display = 'block';
+        document.getElementById('imagenes-grid').innerHTML = '<p style="color:var(--color-muted);font-size:0.85rem;">Cargando imágenes...</p>';
+        document.getElementById('img-file').value = '';
+        document.getElementById('img-portada').checked = false;
+        loadImagenes(id, (p.proyecto_imagenes || []).sort((a,b) => a.orden - b.orden));
 
         document.getElementById('modal-proyecto').classList.add('open');
     } catch {
@@ -590,10 +686,11 @@ function closeModal() {
     document.getElementById('modal-proyecto').classList.remove('open');
 }
 
-function addFeatureRow(titulo = '', descripcion = '') {
+function addFeatureRow(titulo = '', descripcion = '', featureId = '') {
     const list = document.getElementById('features-list');
     const row = document.createElement('div');
     row.className = 'feature-row';
+    row.dataset.featureId = featureId;
     row.innerHTML = `
         <input type="text" placeholder="Título" value="${titulo}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
         <input type="text" placeholder="Descripción" value="${descripcion}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
@@ -632,8 +729,19 @@ async function guardarProyecto() {
 
         const proyId = data.id;
 
-        // Guardar features
+        // Guardar features: si es edición, borrar las existentes primero para evitar duplicados
         const rows = document.querySelectorAll('#features-list .feature-row');
+        if (id) {
+            for (const row of rows) {
+                const fId = row.dataset.featureId;
+                if (fId) {
+                    await fetch(`${API}/admin/proyectos/${proyId}/features/${fId}`, {
+                        method: 'DELETE',
+                        headers: authHeader()
+                    });
+                }
+            }
+        }
         for (let i = 0; i < rows.length; i++) {
             const inputs = rows[i].querySelectorAll('input');
             const titulo = inputs[0].value.trim();
@@ -646,7 +754,7 @@ async function guardarProyecto() {
             });
         }
 
-        toast(id ? 'Proyecto actualizado' : 'Proyecto creado');
+        toast(id ? 'Proyecto actualizado' : 'Proyecto creado — ahora puedes editar las imágenes');
         closeModal();
         loadProyectos();
     } catch (e) {
@@ -661,6 +769,87 @@ async function eliminarProyecto(id, nombre) {
         if (!res.ok) throw new Error('Error al eliminar');
         toast('Proyecto eliminado');
         loadProyectos();
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
+// ── Imágenes ──
+function loadImagenes(proyId, imagenes) {
+    renderImagenes(proyId, imagenes);
+}
+
+function renderImagenes(proyId, imagenes) {
+    const grid = document.getElementById('imagenes-grid');
+    if (!imagenes.length) {
+        grid.innerHTML = '<p style="color:var(--color-muted);font-size:0.85rem;">Sin imágenes. Sube la primera usando el botón de abajo.</p>';
+        return;
+    }
+    grid.innerHTML = imagenes.map(img => `
+        <div class="img-thumb ${img.es_portada ? 'portada' : ''}">
+            <img src="${img.url}" alt="imagen proyecto">
+            ${img.es_portada ? '<span class="img-portada-badge">portada</span>' : ''}
+            <button class="img-delete" onclick="deleteImagen('${proyId}','${img.id}')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+async function uploadImagen() {
+    const proyId = document.getElementById('proyecto-id').value;
+    if (!proyId) { toast('Guarda el proyecto primero para subir imágenes', false); return; }
+    const file = document.getElementById('img-file').files[0];
+    if (!file) { toast('Selecciona una imagen', false); return; }
+
+    const formData = new FormData();
+    formData.append('imagen', file);
+    formData.append('es_portada', document.getElementById('img-portada').checked);
+    formData.append('orden', document.querySelectorAll('#imagenes-grid .img-thumb').length);
+
+    try {
+        const res = await fetch(`${API}/admin/proyectos/${proyId}/imagenes`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getToken()}` },
+            body: formData
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Error al subir');
+        }
+        const data = await res.json();
+        document.getElementById('img-file').value = '';
+        document.getElementById('img-portada').checked = false;
+        toast('Imagen subida');
+
+        // Refrescar lista de imágenes desde la API
+        const slug = proyectosData.find(p => p.id === proyId)?.slug;
+        if (slug) {
+            const pRes = await fetch(`${API}/api/proyectos/${slug}`);
+            const pData = await pRes.json();
+            renderImagenes(proyId, (pData.proyecto_imagenes || []).sort((a,b) => a.orden - b.orden));
+        }
+    } catch (e) {
+        toast(e.message || 'Error al subir imagen', false);
+    }
+}
+
+async function deleteImagen(proyId, imgId) {
+    if (!confirm('¿Eliminar esta imagen?')) return;
+    try {
+        const res = await fetch(`${API}/admin/proyectos/${proyId}/imagenes/${imgId}`, {
+            method: 'DELETE',
+            headers: authHeader()
+        });
+        if (!res.ok) throw new Error('Error al eliminar');
+        toast('Imagen eliminada');
+
+        const slug = proyectosData.find(p => p.id === proyId)?.slug;
+        if (slug) {
+            const pRes = await fetch(`${API}/api/proyectos/${slug}`);
+            const pData = await pRes.json();
+            renderImagenes(proyId, (pData.proyecto_imagenes || []).sort((a,b) => a.orden - b.orden));
+        }
     } catch (e) {
         toast(e.message, false);
     }

@@ -43,8 +43,7 @@
                 <a href="#sobre-nosotros" class="nav-link">Nosotros</a>
                 <a href="#servicios" class="nav-link">Servicios</a>
                 <a href="#equipo" class="nav-link">Liderazgo</a>
-                <a href="https://wa.me/56982470858?text=Hola%20quiero%20más%20información%20sobre%20Landbrokers"
-                    target="_blank" class="btn btn-outline btn-sm">Contacto</a>
+                <a href="#contacto" class="nav-link">Contacto</a>
             </nav>
         </div>
     </header>
@@ -268,6 +267,53 @@
                     Cargando proyectos...
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- Formulario de Contacto -->
+    <section class="section" id="contacto" style="background:var(--color-white);">
+        <div class="container">
+            <div style="max-width:600px; margin:0 auto; text-align:center;" data-aos="fade-up">
+                <h2 class="section-title">¿Le interesa algún <span class="accent-gold">proyecto?</span></h2>
+                <div class="title-divider center"></div>
+                <p style="color:var(--color-text-muted); margin-bottom:40px; font-size:1rem;">
+                    Déjenos sus datos y nos pondremos en contacto a la brevedad.
+                </p>
+            </div>
+            <form id="lead-form" data-aos="fade-up" data-aos-delay="100"
+                style="max-width:580px; margin:0 auto; background:var(--color-light); padding:40px; border-radius:4px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <div>
+                        <label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555;">Nombre *</label>
+                        <input type="text" id="lead-nombre" placeholder="Su nombre" required
+                            style="width:100%; padding:11px 14px; border:1px solid #e5e0d8; border-radius:4px; font-size:0.95rem; font-family:inherit; outline:none; background:#fff; transition:border-color .2s;"
+                            onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e0d8'">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555;">Teléfono</label>
+                        <input type="tel" id="lead-telefono" placeholder="+56 9 XXXX XXXX"
+                            style="width:100%; padding:11px 14px; border:1px solid #e5e0d8; border-radius:4px; font-size:0.95rem; font-family:inherit; outline:none; background:#fff; transition:border-color .2s;"
+                            onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e0d8'">
+                    </div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555;">Email *</label>
+                    <input type="email" id="lead-email" placeholder="su@email.com" required
+                        style="width:100%; padding:11px 14px; border:1px solid #e5e0d8; border-radius:4px; font-size:0.95rem; font-family:inherit; outline:none; background:#fff; transition:border-color .2s;"
+                        onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e0d8'">
+                </div>
+                <div style="margin-bottom:24px;">
+                    <label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555;">Mensaje</label>
+                    <textarea id="lead-mensaje" placeholder="¿En qué proyecto está interesado? ¿Qué le gustaría saber?" rows="4"
+                        style="width:100%; padding:11px 14px; border:1px solid #e5e0d8; border-radius:4px; font-size:0.95rem; font-family:inherit; outline:none; background:#fff; resize:vertical; transition:border-color .2s;"
+                        onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e0d8'"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"
+                    style="width:100%; padding:14px; font-size:1rem; justify-content:center;">
+                    Enviar Consulta <i class="fa-solid fa-paper-plane" style="margin-left:8px;"></i>
+                </button>
+                <div id="lead-msg" style="margin-top:14px; text-align:center; font-size:0.9rem; display:none; padding:12px; border-radius:4px;"></div>
+            </form>
         </div>
     </section>
 
