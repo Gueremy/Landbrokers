@@ -1,0 +1,111 @@
+// URL de la API — cambiar a producción cuando se despliegue
+const API_URL = 'https://api.landbrokers.cl';
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    // 1. Initialize Lenis for Smooth Scrolling
+    const lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        direction: 'vertical',
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1,
+        smoothTouch: false,
+        touchMultiplier: 2,
+        infinite: false,
+    });
+
+    function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // 2. Hero GSAP Animations
+    const tl = gsap.timeline();
+    tl.to(".gsap-reveal", { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.2 })
+      .to(".gsap-reveal-delay", { y: 0, opacity: 1, duration: 1, ease: "power3.out" }, "-=0.6")
+      .to(".gsap-reveal-delay-2", { y: 0, opacity: 1, duration: 1, ease: "power3.out" }, "-=0.6");
+
+    // 3. Header scroll effect
+    const header = document.querySelector('.header');
+    window.addEventListener('scroll', () => {
+        header.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // 4. AOS
+    AOS.init({ once: true, offset: 100, duration: 800, easing: 'ease-out-cubic' });
+
+    // 5. Tilt Cards (sección propuesta de valor)
+    VanillaTilt.init(document.querySelectorAll(".value-section .tilt-card"), {
+        max: 5, speed: 400, glare: true, "max-glare": 0.1,
+    });
+
+    // 6. Cargar proyectos desde la API
+    loadProyectos();
+});
+
+async function loadProyectos() {
+    const container = document.getElementById('projects-list');
+    try {
+        const res = await fetch(`${API_URL}/api/proyectos`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const proyectos = await res.json();
+
+        if (!proyectos.length) {
+            container.innerHTML = '<p style="text-align:center; padding:60px 0; color:var(--color-text-muted);">No hay proyectos disponibles por el momento.</p>';
+            return;
+        }
+
+        container.innerHTML = proyectos.map((p, i) => renderProyectoCard(p, i)).join('');
+
+        // Re-init tilt en las tarjetas recién insertadas
+        VanillaTilt.init(document.querySelectorAll('#projects-list .tilt-card'), {
+            max: 5, speed: 400, glare: true, "max-glare": 0.1,
+        });
+
+        // Re-init AOS para los nuevos elementos
+        AOS.refresh();
+
+    } catch (err) {
+        console.error('Error cargando proyectos:', err);
+        container.innerHTML = '<p style="text-align:center; padding:60px 0; color:var(--color-text-muted);">No se pudieron cargar los proyectos. <a href="https://wa.me/56982470858" target="_blank">Contáctenos por WhatsApp</a>.</p>';
+    }
+}
+
+function renderProyectoCard(p, index) {
+    const delay = (index + 1) * 100;
+    const estadoBadge = p.estado !== 'activo' ? `<span style="display:inline-block; margin-bottom:12px; padding:4px 12px; border-radius:2px; font-size:0.8rem; font-weight:600; text-transform:uppercase; background:${p.estado === 'vendido' ? '#c0392b' : '#f39c12'}; color:#fff;">${p.estado === 'vendido' ? 'Vendido' : 'Próximamente'}</span>` : '';
+
+    const enlaceBtn = p.url_externa
+        ? `<a href="${p.url_externa}" target="_blank" rel="noopener" class="btn btn-outline" style="color:var(--color-primary); border-color:var(--color-primary); margin-bottom:40px;">VER PROYECTO <i class="fa-solid fa-arrow-right" style="margin-left:8px; font-size:1rem;"></i></a>`
+        : '';
+
+    const featuresHTML = (p.features || []).map(f => `
+        <div style="background:var(--color-light); padding:25px; border-radius:4px; height:100%;">
+            <h4 style="font-size:1.1rem; margin-bottom:12px; color:var(--color-primary); font-family:var(--font-heading);">
+                ${f.titulo}
+            </h4>
+            <p style="font-size:0.9rem; color:var(--color-text-muted); margin:0; line-height:1.6;">${f.descripcion || ''}</p>
+        </div>
+    `).join('');
+
+    const featuresSection = featuresHTML ? `
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px; border-top:1px solid rgba(0,0,0,0.05); padding-top:40px; text-align:left;">
+            ${featuresHTML}
+        </div>
+    ` : '';
+
+    return `
+        <div class="project-showcase tilt-card" data-aos="fade-up" data-aos-delay="${delay}"
+            style="background:var(--color-white); border-radius:4px; box-shadow:0 15px 40px rgba(0,0,0,0.04); padding:50px; margin-bottom:40px; text-align:center;">
+            ${estadoBadge}
+            <h3 style="font-size:1.5rem; margin-bottom:10px;">${p.nombre}</h3>
+            <h5 class="accent-gold" style="margin-bottom:20px; font-weight:500;">${p.ubicacion || ''}</h5>
+            <p style="margin-bottom:30px; color:var(--color-text-muted); max-width:700px; margin-left:auto; margin-right:auto;">${p.descripcion || ''}</p>
+            ${enlaceBtn}
+            ${featuresSection}
+        </div>
+    `;
+}

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LandBrokers — Panel Admin</title>
+    <link rel="icon" type="image/png" href="../assets/me.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #1a3a2e;
+            --color-gold: #c9a84c;
+            --color-light: #f8f6f1;
+            --color-white: #ffffff;
+            --color-danger: #c0392b;
+            --color-muted: #888;
+            --color-border: #e5e0d8;
+            --font-body: 'Inter', sans-serif;
+            --font-heading: 'Playfair Display', serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-light);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* ── Login ── */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--color-primary);
+        }
+
+        .login-box {
+            background: var(--color-white);
+            padding: 48px 40px;
+            border-radius: 6px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .login-box h1 {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            color: var(--color-primary);
+            margin-bottom: 6px;
+        }
+
+        .login-box p { color: var(--color-muted); font-size: 0.9rem; margin-bottom: 32px; }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: var(--font-body);
+            margin-bottom: 14px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .login-box input:focus { border-color: var(--color-gold); }
+
+        .login-box button {
+            width: 100%;
+            padding: 13px;
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: var(--font-body);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .login-box button:hover { background: #2a5040; }
+        #login-error { color: var(--color-danger); font-size: 0.85rem; margin-top: 10px; }
+
+        /* ── App shell ── */
+        #app { display: none; }
+
+        .topbar {
+            background: var(--color-primary);
+            color: #fff;
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar h1 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-gold); }
+
+        .topbar button {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .tabs {
+            background: var(--color-white);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            padding: 0 24px;
+        }
+
+        .tab-btn {
+            padding: 14px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--color-muted);
+            transition: all .2s;
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-gold);
+        }
+
+        .content { padding: 28px 24px; max-width: 1100px; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: var(--font-body);
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: background .2s;
+        }
+
+        .btn-primary { background: var(--color-primary); color: #fff; }
+        .btn-primary:hover { background: #2a5040; }
+        .btn-danger { background: var(--color-danger); color: #fff; }
+        .btn-danger:hover { background: #a93226; }
+        .btn-outline { background: transparent; border: 1px solid var(--color-border); color: #333; }
+        .btn-outline:hover { background: var(--color-light); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-gold { background: var(--color-gold); color: var(--color-primary); }
+
+        /* ── Table ── */
+        table { width: 100%; border-collapse: collapse; background: var(--color-white); border-radius: 6px; overflow: hidden; }
+        th { background: var(--color-primary); color: #fff; padding: 12px 16px; text-align: left; font-weight: 500; font-size: 0.85rem; }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); font-size: 0.9rem; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #faf9f6; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-activo { background: #d4edda; color: #155724; }
+        .badge-vendido { background: #f8d7da; color: #721c24; }
+        .badge-proximamente { background: #fff3cd; color: #856404; }
+        .badge-leido { background: #d4edda; color: #155724; }
+        .badge-nuevo { background: #cce5ff; color: #004085; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: var(--color-white);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 36px 32px;
+        }
+
+        .modal h2 { font-family: var(--font-heading); margin-bottom: 24px; color: var(--color-primary); }
+
+        .form-row { margin-bottom: 16px; }
+        .form-row label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: #555; }
+        .form-row input, .form-row textarea, .form-row select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-family: var(--font-body);
+            outline: none;
+            transition: border-color .2s;
+        }
+        .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--color-gold); }
+        .form-row textarea { min-height: 90px; resize: vertical; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .modal-footer { margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end; }
+
+        /* ── Features inline ── */
+        .features-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            align-items: start;
+            background: var(--color-light);
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 { font-family: var(--font-heading); color: var(--color-primary); }
+
+        #msg-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--color-primary);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity .3s;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        #msg-toast.show { opacity: 1; }
+
+        @media (max-width: 600px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .modal { padding: 24px 16px; }
+            .content { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+    <div class="login-box">
+        <h1>Landbrokers.</h1>
+        <p>Panel de administración</p>
+        <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+        <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+        <button onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Ingresar</button>
+        <div id="login-error"></div>
+    </div>
+</div>
+
+<!-- App -->
+<div id="app">
+    <div class="topbar">
+        <h1>Landbrokers Admin</h1>
+        <button onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('proyectos')">
+            <i class="fa-solid fa-building"></i> Proyectos
+        </button>
+        <button class="tab-btn" onclick="switchTab('leads')">
+            <i class="fa-solid fa-envelope"></i> Leads <span id="leads-badge" style="display:none; background:var(--color-gold); color:var(--color-primary); border-radius:10px; padding:1px 7px; font-size:0.75rem; margin-left:6px;"></span>
+        </button>
+    </div>
+
+    <div class="content">
+        <!-- Tab Proyectos -->
+        <div id="tab-proyectos" class="tab-panel active">
+            <div class="section-header">
+                <h2>Proyectos</h2>
+                <button class="btn btn-primary" onclick="openModalCrear()">
+                    <i class="fa-solid fa-plus"></i> Nuevo Proyecto
+                </button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nombre</th>
+                        <th>Ubicación</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="proyectos-tbody">
+                    <tr><td colspan="5" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tab Leads -->
+        <div id="tab-leads" class="tab-panel">
+            <div class="section-header">
+                <h2>Consultas recibidas</h2>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Proyecto</th>
+                        <th>Mensaje</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-tbody">
+                    <tr><td colspan="7" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Proyecto -->
+<div id="modal-proyecto" class="modal-overlay">
+    <div class="modal">
+        <h2 id="modal-title">Nuevo Proyecto</h2>
+
+        <input type="hidden" id="proyecto-id">
+
+        <div class="form-grid">
+            <div class="form-row">
+                <label>Nombre *</label>
+                <input type="text" id="p-nombre" placeholder="Refugio Patagonia — Puerto Aysén">
+            </div>
+            <div class="form-row">
+                <label>Slug (URL) *</label>
+                <input type="text" id="p-slug" placeholder="refugio-patagonia">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>Ubicación</label>
+            <input type="text" id="p-ubicacion" placeholder="Patagonia Chilena / Puerto Aysén">
+        </div>
+
+        <div class="form-row">
+            <label>Descripción</label>
+            <textarea id="p-descripcion" placeholder="Texto descriptivo del proyecto..."></textarea>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-row">
+                <label>Estado</label>
+                <select id="p-estado">
+                    <option value="activo">Activo</option>
+                    <option value="vendido">Vendido</option>
+                    <option value="proximamente">Próximamente</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Orden</label>
+                <input type="number" id="p-orden" placeholder="1" min="0">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>Link externo (opcional)</label>
+            <input type="url" id="p-url-externa" placeholder="https://refugiopatagonia.cl/">
+        </div>
+
+        <div class="form-grid">
+            <div class="form-row">
+                <label>GPS Latitud</label>
+                <input type="text" id="p-lat" placeholder="-45.9000">
+            </div>
+            <div class="form-row">
+                <label>GPS Longitud</label>
+                <input type="text" id="p-lng" placeholder="-72.7000">
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div style="margin-top:20px; margin-bottom:8px;">
+            <label style="font-weight:600; font-size:0.9rem;">Características / Features</label>
+        </div>
+        <div class="features-list" id="features-list"></div>
+        <button class="btn btn-outline btn-sm" onclick="addFeatureRow()">
+            <i class="fa-solid fa-plus"></i> Agregar característica
+        </button>
+
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardarProyecto()">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="msg-toast"></div>
+
+<script>
+// ── Config ──
+const API = 'https://api.landbrokers.cl';
+
+function getToken() { return localStorage.getItem('lb_token'); }
+function setToken(t) { localStorage.setItem('lb_token', t); }
+function clearToken() { localStorage.removeItem('lb_token'); }
+
+function authHeader() {
+    return { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' };
+}
+
+function toast(msg, ok = true) {
+    const el = document.getElementById('msg-toast');
+    el.textContent = msg;
+    el.style.background = ok ? 'var(--color-primary)' : 'var(--color-danger)';
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Auth ──
+async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+
+    try {
+        const res = await fetch(`${API}/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión');
+        setToken(data.token);
+        showApp();
+    } catch (e) {
+        errEl.textContent = e.message;
+    }
+}
+
+function logout() {
+    clearToken();
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadProyectos();
+    loadLeads();
+}
+
+// Auto-login si hay token
+if (getToken()) showApp();
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+
+// ── Tabs ──
+function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+// ── Proyectos ──
+let proyectosData = [];
+
+async function loadProyectos() {
+    try {
+        const res = await fetch(`${API}/admin/proyectos`, { headers: authHeader() });
+        if (res.status === 401) { logout(); return; }
+        proyectosData = await res.json();
+        renderProyectos();
+    } catch {
+        toast('Error cargando proyectos', false);
+    }
+}
+
+function renderProyectos() {
+    const tbody = document.getElementById('proyectos-tbody');
+    if (!proyectosData.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-muted);padding:40px;">Sin proyectos aún. Crea el primero.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = proyectosData.map(p => `
+        <tr>
+            <td>${p.orden}</td>
+            <td><strong>${p.nombre}</strong></td>
+            <td>${p.ubicacion || '—'}</td>
+            <td><span class="badge badge-${p.estado}">${p.estado}</span></td>
+            <td>
+                <button class="btn btn-outline btn-sm" onclick="openModalEditar('${p.id}')">
+                    <i class="fa-solid fa-pen"></i> Editar
+                </button>
+                <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="eliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openModalCrear() {
+    document.getElementById('modal-title').textContent = 'Nuevo Proyecto';
+    document.getElementById('proyecto-id').value = '';
+    ['nombre','slug','ubicacion','descripcion','url-externa','lat','lng'].forEach(f => {
+        document.getElementById(`p-${f}`).value = '';
+    });
+    document.getElementById('p-estado').value = 'activo';
+    document.getElementById('p-orden').value = '';
+    document.getElementById('features-list').innerHTML = '';
+    addFeatureRow();
+    document.getElementById('modal-proyecto').classList.add('open');
+}
+
+async function openModalEditar(id) {
+    try {
+        const res = await fetch(`${API}/api/proyectos/${proyectosData.find(p=>p.id===id)?.slug || id}`, { headers: authHeader() });
+        const p = await res.json();
+        document.getElementById('modal-title').textContent = 'Editar Proyecto';
+        document.getElementById('proyecto-id').value = p.id;
+        document.getElementById('p-nombre').value = p.nombre || '';
+        document.getElementById('p-slug').value = p.slug || '';
+        document.getElementById('p-ubicacion').value = p.ubicacion || '';
+        document.getElementById('p-descripcion').value = p.descripcion || '';
+        document.getElementById('p-estado').value = p.estado || 'activo';
+        document.getElementById('p-orden').value = p.orden ?? '';
+        document.getElementById('p-url-externa').value = p.url_externa || '';
+        document.getElementById('p-lat').value = p.gps_lat ?? '';
+        document.getElementById('p-lng').value = p.gps_lng ?? '';
+
+        const fl = document.getElementById('features-list');
+        fl.innerHTML = '';
+        (p.proyecto_features || []).forEach(f => addFeatureRow(f.titulo, f.descripcion));
+        if (!p.proyecto_features?.length) addFeatureRow();
+
+        document.getElementById('modal-proyecto').classList.add('open');
+    } catch {
+        toast('Error cargando proyecto', false);
+    }
+}
+
+function closeModal() {
+    document.getElementById('modal-proyecto').classList.remove('open');
+}
+
+function addFeatureRow(titulo = '', descripcion = '') {
+    const list = document.getElementById('features-list');
+    const row = document.createElement('div');
+    row.className = 'feature-row';
+    row.innerHTML = `
+        <input type="text" placeholder="Título" value="${titulo}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
+        <input type="text" placeholder="Descripción" value="${descripcion}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
+        <button class="btn btn-danger btn-sm" onclick="this.closest('.feature-row').remove()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    `;
+    list.appendChild(row);
+}
+
+async function guardarProyecto() {
+    const id = document.getElementById('proyecto-id').value;
+    const body = {
+        nombre: document.getElementById('p-nombre').value.trim(),
+        slug: document.getElementById('p-slug').value.trim(),
+        ubicacion: document.getElementById('p-ubicacion').value.trim(),
+        descripcion: document.getElementById('p-descripcion').value.trim(),
+        estado: document.getElementById('p-estado').value,
+        orden: parseInt(document.getElementById('p-orden').value) || 0,
+        url_externa: document.getElementById('p-url-externa').value.trim() || null,
+        gps_lat: parseFloat(document.getElementById('p-lat').value) || null,
+        gps_lng: parseFloat(document.getElementById('p-lng').value) || null,
+    };
+
+    if (!body.nombre || !body.slug) {
+        toast('Nombre y slug son requeridos', false);
+        return;
+    }
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API}/admin/proyectos/${id}` : `${API}/admin/proyectos`;
+        const res = await fetch(url, { method, headers: authHeader(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        const proyId = data.id;
+
+        // Guardar features
+        const rows = document.querySelectorAll('#features-list .feature-row');
+        for (let i = 0; i < rows.length; i++) {
+            const inputs = rows[i].querySelectorAll('input');
+            const titulo = inputs[0].value.trim();
+            const descripcion = inputs[1].value.trim();
+            if (!titulo) continue;
+            await fetch(`${API}/admin/proyectos/${proyId}/features`, {
+                method: 'POST',
+                headers: authHeader(),
+                body: JSON.stringify({ titulo, descripcion, orden: i })
+            });
+        }
+
+        toast(id ? 'Proyecto actualizado' : 'Proyecto creado');
+        closeModal();
+        loadProyectos();
+    } catch (e) {
+        toast(e.message || 'Error al guardar', false);
+    }
+}
+
+async function eliminarProyecto(id, nombre) {
+    if (!confirm(`¿Eliminar el proyecto "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    try {
+        const res = await fetch(`${API}/admin/proyectos/${id}`, { method: 'DELETE', headers: authHeader() });
+        if (!res.ok) throw new Error('Error al eliminar');
+        toast('Proyecto eliminado');
+        loadProyectos();
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
+// ── Leads ──
+async function loadLeads() {
+    try {
+        const res = await fetch(`${API}/admin/leads`, { headers: authHeader() });
+        if (res.status === 401) { logout(); return; }
+        const leads = await res.json();
+        renderLeads(leads);
+        const nuevos = leads.filter(l => !l.leido).length;
+        const badge = document.getElementById('leads-badge');
+        if (nuevos > 0) { badge.textContent = nuevos; badge.style.display = 'inline'; }
+        else { badge.style.display = 'none'; }
+    } catch {
+        toast('Error cargando leads', false);
+    }
+}
+
+function renderLeads(leads) {
+    const tbody = document.getElementById('leads-tbody');
+    if (!leads.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--color-muted);padding:40px;">Sin consultas aún.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = leads.map(l => {
+        const fecha = new Date(l.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return `
+            <tr style="${!l.leido ? 'font-weight:600;' : ''}">
+                <td>${fecha}</td>
+                <td>${l.nombre}</td>
+                <td><a href="mailto:${l.email}">${l.email}</a></td>
+                <td>${l.telefono || '—'}</td>
+                <td>${l.proyectos?.nombre || '—'}</td>
+                <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${(l.mensaje||'').replace(/"/g,'&quot;')}">${l.mensaje || '—'}</td>
+                <td>
+                    <span class="badge badge-${l.leido ? 'leido' : 'nuevo'}">${l.leido ? 'Leído' : 'Nuevo'}</span>
+                    ${!l.leido ? `<button class="btn btn-outline btn-sm" style="margin-left:6px;" onclick="marcarLeido('${l.id}')">Marcar leído</button>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function marcarLeido(id) {
+    try {
+        await fetch(`${API}/admin/leads/${id}/leido`, {
+            method: 'PATCH',
+            headers: authHeader(),
+            body: JSON.stringify({ leido: true })
+        });
+        loadLeads();
+    } catch {
+        toast('Error actualizando lead', false);
+    }
+}
+
+// Cerrar modal al hacer click fuera
+document.getElementById('modal-proyecto').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
