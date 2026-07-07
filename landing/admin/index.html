@@ -190,6 +190,7 @@
         .badge-proximamente { background: #fff3cd; color: #856404; }
         .badge-leido { background: #d4edda; color: #155724; }
         .badge-nuevo { background: #cce5ff; color: #004085; }
+        .badge-remate { background: #e67e22; color: #fff; margin-left: 6px; }
 
         /* ── Modal ── */
         .modal-overlay {
@@ -530,6 +531,34 @@
             <i class="fa-solid fa-plus"></i> Agregar característica
         </button>
 
+        <!-- Remate -->
+        <div style="margin-top:20px; border-top:1px solid var(--color-border); padding-top:16px;">
+            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.9rem; cursor:pointer;">
+                <input type="checkbox" id="p-es-remate" onchange="toggleRemateFields()"> Es remate
+            </label>
+        </div>
+        <div id="remate-fields" style="display:none; margin-top:14px;">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>Fecha del remate *</label>
+                    <input type="date" id="p-remate-fecha">
+                </div>
+                <div class="form-row">
+                    <label>Precio mínimo (CLP) *</label>
+                    <input type="number" id="p-remate-precio-minimo" placeholder="15000000" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <label>Estado del remate</label>
+                <select id="p-remate-estado">
+                    <option value="programado">Programado</option>
+                    <option value="en_curso">En curso</option>
+                    <option value="adjudicado">Adjudicado</option>
+                    <option value="suspendido">Suspendido</option>
+                </select>
+            </div>
+        </div>
+
         <!-- Imágenes (visible solo al editar) -->
         <div id="imagenes-section" style="display:none; margin-top:28px; border-top:1px solid var(--color-border); padding-top:20px;">
             <label style="font-weight:600; font-size:0.9rem; display:block; margin-bottom:12px;">Imágenes del proyecto</label>
@@ -696,7 +725,7 @@ function renderProyectos() {
     tbody.innerHTML = proyectosData.map(p => `
         <tr>
             <td>${p.orden}</td>
-            <td><strong>${esc(p.nombre)}</strong></td>
+            <td><strong>${esc(p.nombre)}</strong>${p.es_remate ? '<span class="badge badge-remate">Remate</span>' : ''}</td>
             <td>${esc(p.ubicacion) || '—'}</td>
             <td><span class="badge badge-${esc(p.estado)}">${esc(p.estado)}</span></td>
             <td>
@@ -733,8 +762,18 @@ function openModalCrear() {
     document.getElementById('features-list').innerHTML = '';
     document.getElementById('imagenes-section').style.display = 'none';
     slugEditadoAMano = false;
+    document.getElementById('p-es-remate').checked = false;
+    document.getElementById('p-remate-fecha').value = '';
+    document.getElementById('p-remate-precio-minimo').value = '';
+    document.getElementById('p-remate-estado').value = 'programado';
+    toggleRemateFields();
     addFeatureRow();
     document.getElementById('modal-proyecto').classList.add('open');
+}
+
+function toggleRemateFields() {
+    const checked = document.getElementById('p-es-remate').checked;
+    document.getElementById('remate-fields').style.display = checked ? 'block' : 'none';
 }
 
 async function openModalEditar(id) {
@@ -759,6 +798,12 @@ async function openModalEditar(id) {
         document.getElementById('p-lotes-totales').value = p.lotes_totales ?? '';
         document.getElementById('p-lotes-disponibles').value = p.lotes_disponibles ?? '';
         slugEditadoAMano = true; // en edición nunca pisar el slug automáticamente
+
+        document.getElementById('p-es-remate').checked = Boolean(p.es_remate);
+        document.getElementById('p-remate-fecha').value = p.remate_fecha ? p.remate_fecha.slice(0, 10) : '';
+        document.getElementById('p-remate-precio-minimo').value = p.remate_precio_minimo ?? '';
+        document.getElementById('p-remate-estado').value = p.remate_estado || 'programado';
+        toggleRemateFields();
 
         const fl = document.getElementById('features-list');
         fl.innerHTML = '';
@@ -813,10 +858,19 @@ async function guardarProyecto() {
         superficie: document.getElementById('p-superficie').value.trim() || null,
         lotes_totales: parseInt(document.getElementById('p-lotes-totales').value) || null,
         lotes_disponibles: parseInt(document.getElementById('p-lotes-disponibles').value) || null,
+        es_remate: document.getElementById('p-es-remate').checked,
+        remate_fecha: document.getElementById('p-remate-fecha').value || null,
+        remate_precio_minimo: parseFloat(document.getElementById('p-remate-precio-minimo').value) || null,
+        remate_estado: document.getElementById('p-remate-estado').value,
     };
 
     if (!body.nombre || !body.slug) {
         toast('Nombre y slug son requeridos', false);
+        return;
+    }
+
+    if (body.es_remate && (!body.remate_fecha || !body.remate_precio_minimo)) {
+        toast('Fecha del remate y precio mínimo son requeridos cuando "Es remate" está activo', false);
         return;
     }
 
