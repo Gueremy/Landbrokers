@@ -55,6 +55,20 @@ const loginLimiter = rateLimit({
   message: { error: 'Demasiados intentos de login. Espere 15 minutos.' },
 });
 
+const REMATE_ESTADOS = ['programado', 'en_curso', 'adjudicado', 'suspendido'];
+
+// Valida los campos de remate de un body de proyecto. Devuelve un string de error o null.
+function validarRemate(body) {
+  if (!body.es_remate) return null;
+  if (!body.remate_fecha || !body.remate_precio_minimo) {
+    return 'remate_fecha y remate_precio_minimo son requeridos cuando es_remate es true';
+  }
+  if (body.remate_estado && !REMATE_ESTADOS.includes(body.remate_estado)) {
+    return `remate_estado debe ser uno de: ${REMATE_ESTADOS.join(', ')}`;
+  }
+  return null;
+}
+
 // POST /admin/login
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -109,7 +123,7 @@ router.put('/password', async (req, res) => {
 router.get('/proyectos', async (req, res) => {
   const { data, error } = await supabase
     .from('proyectos')
-    .select('id, slug, nombre, ubicacion, estado, orden, created_at')
+    .select('id, slug, nombre, ubicacion, estado, orden, created_at, es_remate, remate_estado')
     .order('orden', { ascending: true });
 
   if (error) return res.status(500).json({ error: error.message });
@@ -121,7 +135,11 @@ router.post('/proyectos', async (req, res) => {
   const {
     slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden,
     precio_desde, superficie, lotes_totales, lotes_disponibles,
+    es_remate, remate_fecha, remate_precio_minimo, remate_estado,
   } = req.body;
+
+  const errorRemate = validarRemate(req.body);
+  if (errorRemate) return res.status(400).json({ error: errorRemate });
 
   const { data, error } = await supabase
     .from('proyectos')
@@ -131,6 +149,10 @@ router.post('/proyectos', async (req, res) => {
       superficie: superficie || null,
       lotes_totales: lotes_totales ?? null,
       lotes_disponibles: lotes_disponibles ?? null,
+      es_remate: Boolean(es_remate),
+      remate_fecha: es_remate ? remate_fecha : null,
+      remate_precio_minimo: es_remate ? remate_precio_minimo : null,
+      remate_estado: es_remate ? (remate_estado || 'programado') : null,
     }])
     .select()
     .single();
@@ -144,7 +166,11 @@ router.put('/proyectos/:id', async (req, res) => {
   const {
     slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden,
     precio_desde, superficie, lotes_totales, lotes_disponibles,
+    es_remate, remate_fecha, remate_precio_minimo, remate_estado,
   } = req.body;
+
+  const errorRemate = validarRemate(req.body);
+  if (errorRemate) return res.status(400).json({ error: errorRemate });
 
   const { data, error } = await supabase
     .from('proyectos')
@@ -154,6 +180,10 @@ router.put('/proyectos/:id', async (req, res) => {
       superficie: superficie || null,
       lotes_totales: lotes_totales ?? null,
       lotes_disponibles: lotes_disponibles ?? null,
+      es_remate: Boolean(es_remate),
+      remate_fecha: es_remate ? remate_fecha : null,
+      remate_precio_minimo: es_remate ? remate_precio_minimo : null,
+      remate_estado: es_remate ? (remate_estado || 'programado') : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', req.params.id)

@@ -23,6 +23,7 @@ router.get('/proyectos', async (req, res) => {
       id, slug, nombre, ubicacion, descripcion, estado,
       url_externa, orden,
       precio_desde, superficie, lotes_totales, lotes_disponibles,
+      es_remate, remate_fecha, remate_precio_minimo, remate_estado,
       proyecto_imagenes ( url, es_portada ),
       proyecto_features ( titulo, descripcion, orden )
     `)
@@ -48,6 +49,7 @@ router.get('/proyectos/:slug', async (req, res) => {
       id, slug, nombre, ubicacion, descripcion, estado,
       gps_lat, gps_lng, url_externa, orden, created_at,
       precio_desde, superficie, lotes_totales, lotes_disponibles,
+      es_remate, remate_fecha, remate_precio_minimo, remate_estado,
       proyecto_imagenes ( id, url, orden, es_portada ),
       proyecto_features ( id, titulo, descripcion, orden )
     `)
@@ -60,6 +62,30 @@ router.get('/proyectos/:slug', async (req, res) => {
   proyecto.proyecto_features?.sort((a, b) => a.orden - b.orden);
 
   res.json(proyecto);
+});
+
+// GET /api/remates — proyectos en remate, ordenados por fecha ascendente
+router.get('/remates', async (req, res) => {
+  const { data: remates, error } = await supabase
+    .from('proyectos')
+    .select(`
+      id, slug, nombre, ubicacion,
+      remate_fecha, remate_precio_minimo, remate_estado,
+      proyecto_imagenes ( url, es_portada )
+    `)
+    .eq('es_remate', true)
+    .in('estado', ['activo', 'vendido', 'proximamente'])
+    .order('remate_fecha', { ascending: true });
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const resultado = remates.map((p) => ({
+    ...p,
+    imagen_portada: p.proyecto_imagenes?.find((i) => i.es_portada)?.url || null,
+    proyecto_imagenes: undefined,
+  }));
+
+  res.json(resultado);
 });
 
 // POST /api/leads — recibir consulta desde la landing
