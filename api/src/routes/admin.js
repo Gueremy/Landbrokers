@@ -7,7 +7,44 @@ const supabase = require('../db/supabase');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Solo imágenes reales: el accept="image/*" del navegador no protege nada por sí solo
+const MIME_EXT = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/avif': 'avif',
+};
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!MIME_EXT[file.mimetype]) {
+      req.fileRechazado = `Tipo de archivo no permitido (${file.mimetype}). Solo JPG, PNG, WebP, GIF o AVIF.`;
+      return cb(null, false);
+    }
+    cb(null, true);
+  },
+});
+
+// Borra del bucket todos los archivos guardados bajo el prefijo de un proyecto
+async function borrarArchivosProyecto(proyectoId) {
+  const { data: archivos } = await supabase.storage.from('proyectos').list(proyectoId);
+  if (archivos?.length) {
+    await supabase.storage
+      .from('proyectos')
+      .remove(archivos.map((a) => `${proyectoId}/${a.name}`));
+  }
+}
+
+// De una URL pública del bucket → path interno ("<proyectoId>/<archivo>")
+function pathDesdeUrl(url) {
+  const marca = '/object/public/proyectos/';
+  const i = (url || '').indexOf(marca);
+  return i === -1 ? null : decodeURIComponent(url.slice(i + marca.length));
+}
 
 // Frena fuerza bruta sobre el login: 10 intentos por IP cada 15 minutos
 const loginLimiter = rateLimit({
@@ -127,8 +164,11 @@ router.put('/proyectos/:id', async (req, res) => {
   res.json(data);
 });
 
-// DELETE /admin/proyectos/:id — eliminar proyecto
+// DELETE /admin/proyectos/:id — eliminar proyecto (incluye sus archivos en Storage)
 router.delete('/proyectos/:id', async (req, res) => {
+  // Primero los archivos: si se borrara el proyecto primero, los paths quedarían huérfanos para siempre
+  await borrarArchivosProyecto(req.params.id);
+
   const { error } = await supabase.from('proyectos').delete().eq('id', req.params.id);
   if (error) return res.status(400).json({ error: error.message });
   res.json({ ok: true });
@@ -136,9 +176,10 @@ router.delete('/proyectos/:id', async (req, res) => {
 
 // POST /admin/proyectos/:id/imagenes — subir imagen a Supabase Storage
 router.post('/proyectos/:id/imagenes', upload.single('imagen'), async (req, res) => {
+  if (req.fileRechazado) return res.status(400).json({ error: req.fileRechazado });
   if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' });
 
-  const ext = req.file.originalname.split('.').pop();
+  const ext = MIME_EXT[req.file.mimetype];
   const filename = `${req.params.id}/${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
@@ -170,8 +211,15 @@ router.post('/proyectos/:id/imagenes', upload.single('imagen'), async (req, res)
   res.status(201).json(data);
 });
 
-// DELETE /admin/proyectos/:id/imagenes/:imgId — eliminar imagen
+// DELETE /admin/proyectos/:id/imagenes/:imgId — eliminar imagen (fila + archivo en Storage)
 router.delete('/proyectos/:id/imagenes/:imgId', async (req, res) => {
+  const { data: img } = await supabase
+    .from('proyecto_imagenes')
+    .select('url')
+    .eq('id', req.params.imgId)
+    .eq('proyecto_id', req.params.id)
+    .single();
+
   const { error } = await supabase
     .from('proyecto_imagenes')
     .delete()
@@ -179,6 +227,12 @@ router.delete('/proyectos/:id/imagenes/:imgId', async (req, res) => {
     .eq('proyecto_id', req.params.id);
 
   if (error) return res.status(400).json({ error: error.message });
+
+  // El archivo se borra después de la fila: si esto falla queda un huérfano
+  // (tolerable), pero nunca una fila apuntando a un archivo inexistente.
+  const path = pathDesdeUrl(img?.url);
+  if (path) await supabase.storage.from('proyectos').remove([path]);
+
   res.json({ ok: true });
 });
 
