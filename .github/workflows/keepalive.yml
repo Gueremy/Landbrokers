@@ -2,7 +2,18 @@
 # Hace una consulta real a la API cada día — /api/proyectos toca la tabla proyectos,
 # lo que cuenta como actividad para Supabase. /health NO serviría (no toca la DB).
 #
+# ⚠️ LIMITACIÓN IMPORTANTE: GitHub desactiva los crons programados tras 60 días
+# sin commits en el repo. Como este proyecto es de entrega única, este workflow
+# se apagará solo unos meses después de la última entrega.
+#
+# → El mecanismo PRINCIPAL debe ser UptimeRobot (gratis, no depende del repo):
+#   1. Crear cuenta en uptimerobot.com
+#   2. Add Monitor → HTTP(s) → URL: https://api.landbrokers.cl/api/proyectos
+#   3. Intervalo: 5 minutos. Bonus: avisa por email si el sitio se cae.
+#   Este workflow queda como respaldo secundario.
+#
 # Requiere que la API esté desplegada en https://api.landbrokers.cl
+# (hasta entonces fallará cada día — deshabilitarlo en GitHub > Actions si molesta).
 # Se puede ejecutar a mano desde GitHub > Actions > Keep alive > Run workflow.
 
 name: Keep alive

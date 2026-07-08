@@ -20,12 +20,24 @@ inmobiliario con panel admin. No traer lógica de uno al otro.
 
 ---
 
-## ESTADO ACTUAL DEL PROYECTO
+## ESTADO ACTUAL DEL PROYECTO (actualizado 2026-07-08)
 
 - **Landing page (Hito 1): YA EXISTE y está publicada en landbrokers.cl.**
-  Es un sitio estático HTML/CSS/JS. Funciona, está en producción.
-- **Sistema de gestión (Hito 2): NO existe todavía.** Hay que construirlo.
+  OJO: la versión EN PRODUCCIÓN aún es la vieja (proyectos hardcodeados).
+  La versión del repo (`landing/`) ya es la dinámica; reemplaza a la vieja
+  cuando se haga el deploy (2.8).
+- **Sistema de gestión (Hito 2): CÓDIGO COMPLETO (2.1 → 2.7)** en la rama
+  `claude/repo-setup-database-mhgb8x`. Falta SOLO 2.8 (deploy) y los pasos
+  manuales de Gueremy: SQL en Supabase (orden OBLIGATORIO en
+  `api/supabase/README.md`: schema → seed → mejoras), bucket `proyectos`
+  público en Storage, hash bcrypt en seed.sql, y el `.env`.
 - **Fichas Puntra/Patagonia migradas (Hito 3): NO existe todavía.**
+- **Feature "Propiedades en Remate": TERMINADA en `feature/remates`, SIN
+  mergear.** Cotizada aparte ($180.000). NO mergear hasta aprobación y pago
+  del cliente. Tiene su propia migración `api/supabase/remates.sql`.
+- **Keep-alive Supabase free:** existe `.github/workflows/keepalive.yml`,
+  pero GitHub apaga los crons tras 60 días sin commits. El mecanismo
+  principal debe ser UptimeRobot → `/api/proyectos` (instrucciones en el yml).
 
 ### Lo que la landing ya tiene hoy (revisado en vivo)
 - Hero + Sobre Landbrokers + Propuesta de valor (6 tarjetas)
@@ -193,50 +205,50 @@ Cualquier cosa que sea "cargar propiedades / panel / login" NO es Hito 1.
 Orden interno de construcción:
 
 **2.1 — Fundación backend + base de datos**
-- [ ] Proyecto Node.js + Express inicializado
-- [ ] Conexión a Supabase configurada (.env, nunca hardcodear keys)
-- [ ] Las 5 tablas creadas en Supabase con sus relaciones
-- [ ] Seed inicial con los 2 proyectos actuales (Patagonia + Puntra)
+- [x] Proyecto Node.js + Express inicializado
+- [x] Conexión a Supabase configurada (.env, nunca hardcodear keys)
+- [x] Las 5 tablas creadas en Supabase con sus relaciones
+- [x] Seed inicial con los 2 proyectos actuales (Patagonia + Puntra)
       copiando el contenido que hoy está hardcodeado en la landing
 - **Entregable:** base de datos viva con los 2 proyectos cargados
 
 **2.2 — Autenticación admin**
-- [ ] Endpoint `POST /admin/login` con JWT
-- [ ] Hash de password con bcrypt
-- [ ] Middleware de protección para rutas `/admin/*`
-- [ ] Página `landbrokers.cl/admin` con login
+- [x] Endpoint `POST /admin/login` con JWT
+- [x] Hash de password con bcrypt
+- [x] Middleware de protección para rutas `/admin/*`
+- [x] Página `landbrokers.cl/admin` con login
 - **Entregable:** Joan entra a /admin con usuario y contraseña
 
 **2.3 — API pública (lo que consume la landing)**
-- [ ] `GET /api/proyectos` → listado (solo activos/vendidos/próximamente)
-- [ ] `GET /api/proyectos/:slug` → detalle con imágenes y features
-- [ ] CORS configurado para landbrokers.cl
+- [x] `GET /api/proyectos` → listado (solo activos/vendidos/próximamente)
+- [x] `GET /api/proyectos/:slug` → detalle con imágenes y features
+- [x] CORS configurado para landbrokers.cl
 - **Entregable:** la API responde JSON con los proyectos
 
 **2.4 — API admin protegida (CRUD)**
-- [ ] `POST /admin/proyectos` → crear
-- [ ] `PUT /admin/proyectos/:id` → editar
-- [ ] `DELETE /admin/proyectos/:id` → eliminar
-- [ ] Subida de imágenes a Supabase Storage
-- [ ] Cambiar estado: activo / vendido / próximamente
+- [x] `POST /admin/proyectos` → crear
+- [x] `PUT /admin/proyectos/:id` → editar
+- [x] `DELETE /admin/proyectos/:id` → eliminar
+- [x] Subida de imágenes a Supabase Storage
+- [x] Cambiar estado: activo / vendido / próximamente
 - **Entregable:** se puede crear/editar/borrar un proyecto vía API
 
 **2.5 — Panel admin (interfaz visual)**
-- [ ] Vista lista de proyectos con botones editar/eliminar
-- [ ] Formulario crear/editar proyecto (todos los campos + imágenes + features)
-- [ ] Vista de leads recibidos (con marcar como leído)
+- [x] Vista lista de proyectos con botones editar/eliminar
+- [x] Formulario crear/editar proyecto (todos los campos + imágenes + features)
+- [x] Vista de leads recibidos (con marcar como leído)
 - **Entregable:** Joan gestiona todo desde una interfaz, sin tocar código
 
 **2.6 — Formulario de contacto + leads**
-- [ ] `POST /api/leads` desde la landing (cada ficha)
-- [ ] Lead se guarda en la tabla `leads`
-- [ ] Aparece en el panel admin
+- [x] `POST /api/leads` desde la landing (cada ficha)
+- [x] Lead se guarda en la tabla `leads`
+- [x] Aparece en el panel admin
 - **Entregable:** las consultas de clientes llegan al panel
 
 **2.7 — Integrar landing con la API (lo que cierra el círculo)**
-- [ ] Reemplazar la sección "Proyectos Estructurados" hardcodeada
+- [x] Reemplazar la sección "Proyectos Estructurados" hardcodeada
       por un `fetch('/api/proyectos')` que renderiza las tarjetas
-- [ ] Las tarjetas linkean a la ficha individual por slug
+- [x] Las tarjetas linkean a la ficha individual por slug
 - **Entregable:** agregar un proyecto en el panel → aparece solo en la web
 
 **2.8 — Deploy**
