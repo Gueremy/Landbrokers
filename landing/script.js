@@ -1,6 +1,23 @@
 // URL de la API — cambiar a producción cuando se despliegue
 const API_URL = 'https://api.landbrokers.cl';
 
+// Escapa HTML antes de insertar contenido de la API en innerHTML
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+// Formato moneda chilena: 12500000 → "$12.500.000"
+function formatCLP(valor) {
+    if (valor === null || valor === undefined) return '';
+    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(valor);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // 1. Initialize Lenis for Smooth Scrolling
@@ -60,6 +77,17 @@ async function loadProyectos() {
 
         container.innerHTML = proyectos.map((p, i) => renderProyectoCard(p, i)).join('');
 
+        // Poblar el select del formulario de contacto con los proyectos activos
+        const select = document.getElementById('lead-proyecto');
+        if (select) {
+            proyectos.filter(p => p.estado === 'activo').forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.nombre;
+                select.appendChild(opt);
+            });
+        }
+
         // Re-init tilt en las tarjetas recién insertadas
         VanillaTilt.init(document.querySelectorAll('#projects-list .tilt-card'), {
             max: 5, speed: 400, glare: true, "max-glare": 0.1,
@@ -92,6 +120,8 @@ document.getElementById('lead-form').addEventListener('submit', async (e) => {
                 email: document.getElementById('lead-email').value.trim(),
                 telefono: document.getElementById('lead-telefono').value.trim() || null,
                 mensaje: document.getElementById('lead-mensaje').value.trim() || null,
+                proyecto_id: document.getElementById('lead-proyecto').value || null,
+                website: document.getElementById('lead-website').value, // honeypot
             })
         });
         if (!res.ok) throw new Error();
@@ -111,16 +141,45 @@ function renderProyectoCard(p, index) {
     const delay = (index + 1) * 100;
     const estadoBadge = p.estado !== 'activo' ? `<span style="display:inline-block; margin-bottom:12px; padding:4px 12px; border-radius:2px; font-size:0.8rem; font-weight:600; text-transform:uppercase; background:${p.estado === 'vendido' ? '#c0392b' : '#f39c12'}; color:#fff;">${p.estado === 'vendido' ? 'Vendido' : 'Próximamente'}</span>` : '';
 
+    // Fila de datos comerciales: solo se muestran los campos que Joan haya cargado
+    const datos = [];
+    if (p.precio_desde) datos.push({ label: 'Desde', valor: formatCLP(p.precio_desde) });
+    if (p.superficie) datos.push({ label: 'Superficie', valor: esc(p.superficie) });
+    if (p.lotes_disponibles !== null && p.lotes_disponibles !== undefined) {
+        datos.push({ label: 'Lotes disponibles', valor: p.lotes_totales ? `${p.lotes_disponibles} de ${p.lotes_totales}` : `${p.lotes_disponibles}` });
+    }
+    const datosHTML = datos.length ? `
+        <div style="display:flex; justify-content:center; gap:40px; flex-wrap:wrap; margin-bottom:30px;">
+            ${datos.map(d => `
+                <div>
+                    <div style="font-size:0.8rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">${d.label}</div>
+                    <div style="font-size:1.15rem; font-weight:600; color:var(--color-primary);">${d.valor}</div>
+                </div>
+            `).join('')}
+        </div>
+    ` : '';
+
     const enlaceBtn = p.url_externa
-        ? `<a href="${p.url_externa}" target="_blank" rel="noopener" class="btn btn-outline" style="color:var(--color-primary); border-color:var(--color-primary); margin-bottom:40px;">VER PROYECTO <i class="fa-solid fa-arrow-right" style="margin-left:8px; font-size:1rem;"></i></a>`
+        ? `<a href="${esc(p.url_externa)}" target="_blank" rel="noopener" class="btn btn-outline" style="color:var(--color-primary); border-color:var(--color-primary);">VER PROYECTO <i class="fa-solid fa-arrow-right" style="margin-left:8px; font-size:1rem;"></i></a>`
         : '';
+
+    const consultarBtn = p.estado === 'activo'
+        ? `<a href="#contacto" class="btn btn-primary" onclick="preseleccionarProyecto('${p.id}')">CONSULTAR <i class="fa-solid fa-envelope" style="margin-left:8px; font-size:1rem;"></i></a>`
+        : '';
+
+    const botonesHTML = (enlaceBtn || consultarBtn) ? `
+        <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:40px;">
+            ${consultarBtn}
+            ${enlaceBtn}
+        </div>
+    ` : '';
 
     const featuresHTML = (p.features || []).map(f => `
         <div style="background:var(--color-light); padding:25px; border-radius:4px; height:100%;">
             <h4 style="font-size:1.1rem; margin-bottom:12px; color:var(--color-primary); font-family:var(--font-heading);">
-                ${f.titulo}
+                ${esc(f.titulo)}
             </h4>
-            <p style="font-size:0.9rem; color:var(--color-text-muted); margin:0; line-height:1.6;">${f.descripcion || ''}</p>
+            <p style="font-size:0.9rem; color:var(--color-text-muted); margin:0; line-height:1.6;">${esc(f.descripcion)}</p>
         </div>
     `).join('');
 
@@ -134,11 +193,18 @@ function renderProyectoCard(p, index) {
         <div class="project-showcase tilt-card" data-aos="fade-up" data-aos-delay="${delay}"
             style="background:var(--color-white); border-radius:4px; box-shadow:0 15px 40px rgba(0,0,0,0.04); padding:50px; margin-bottom:40px; text-align:center;">
             ${estadoBadge}
-            <h3 style="font-size:1.5rem; margin-bottom:10px;">${p.nombre}</h3>
-            <h5 class="accent-gold" style="margin-bottom:20px; font-weight:500;">${p.ubicacion || ''}</h5>
-            <p style="margin-bottom:30px; color:var(--color-text-muted); max-width:700px; margin-left:auto; margin-right:auto;">${p.descripcion || ''}</p>
-            ${enlaceBtn}
+            <h3 style="font-size:1.5rem; margin-bottom:10px;">${esc(p.nombre)}</h3>
+            <h5 class="accent-gold" style="margin-bottom:20px; font-weight:500;">${esc(p.ubicacion)}</h5>
+            <p style="margin-bottom:30px; color:var(--color-text-muted); max-width:700px; margin-left:auto; margin-right:auto;">${esc(p.descripcion)}</p>
+            ${datosHTML}
+            ${botonesHTML}
             ${featuresSection}
         </div>
     `;
+}
+
+// El botón "Consultar" de cada tarjeta deja el proyecto pre-seleccionado en el formulario
+function preseleccionarProyecto(id) {
+    const select = document.getElementById('lead-proyecto');
+    if (select) select.value = id;
 }

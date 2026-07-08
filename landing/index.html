@@ -302,6 +302,19 @@
                         style="width:100%; padding:11px 14px; border:1px solid #e5e0d8; border-radius:4px; font-size:0.95rem; font-family:inherit; outline:none; background:#fff; transition:border-color .2s;"
                         onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e0d8'">
                 </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555;">Proyecto de interés</label>
+                    <select id="lead-proyecto"
+                        style="width:100%; padding:11px 14px; border:1px solid #e5e0d8; border-radius:4px; font-size:0.95rem; font-family:inherit; outline:none; background:#fff; transition:border-color .2s;"
+                        onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e0d8'">
+                        <option value="">Consulta general</option>
+                    </select>
+                </div>
+                <!-- Honeypot anti-spam: invisible para humanos, los bots lo llenan -->
+                <div style="position:absolute; left:-9999px;" aria-hidden="true">
+                    <label>No llenar este campo</label>
+                    <input type="text" id="lead-website" name="website" tabindex="-1" autocomplete="off">
+                </div>
                 <div style="margin-bottom:24px;">
                     <label style="display:block; font-size:0.85rem; font-weight:500; margin-bottom:6px; color:#555;">Mensaje</label>
                     <textarea id="lead-mensaje" placeholder="¿En qué proyecto está interesado? ¿Qué le gustaría saber?" rows="4"
