@@ -178,9 +178,9 @@ landing/
 - [ ] `esc()` en `renderImagenes` del panel (consistencia; las URLs son del propio bucket)
 
 ### Ideas vendibles (cotizar aparte a $15.000/hr SI Joan las pide — NO construir gratis)
-- Notificación de leads (email o WhatsApp a Joan) — el upsell más obvio
-- Versión completa de remates (countdown, página propia, pujas)
-- Supabase Pro (~USD 25/mes) si el negocio crece — sin pausas, backups diarios
+Catálogo completo con precios y packs en **`ACTUALIZACIONES.md`** (13 módulos
+cotizados: notificaciones, inventario de lotes, mapa interactivo del masterplan,
+simulador de cuotas, CRM de leads, etc.).
 
 ---
 
