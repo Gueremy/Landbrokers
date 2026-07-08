@@ -136,11 +136,6 @@ function formatFechaRemate(fechaISO) {
     return `${d.getUTCDate()} de ${meses[d.getUTCMonth()]}, ${d.getUTCFullYear()}`;
 }
 
-function formatCLP(valor) {
-    if (valor === null || valor === undefined) return '';
-    return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(valor);
-}
-
 const REMATE_ESTADO_LABELS = {
     programado: { texto: 'Programado', color: '#3498db' },
     en_curso: { texto: 'En Curso', color: '#e67e22' },
@@ -154,7 +149,7 @@ function renderRemateCard(r, index) {
 
     const imagenHTML = r.imagen_portada
         ? `<div style="height:220px; border-radius:4px 4px 0 0; overflow:hidden; margin:-50px -50px 30px -50px;">
-               <img src="${r.imagen_portada}" alt="${r.nombre}" style="width:100%; height:100%; object-fit:cover; display:block;">
+               <img src="${esc(r.imagen_portada)}" alt="${esc(r.nombre)}" style="width:100%; height:100%; object-fit:cover; display:block;">
            </div>`
         : '';
 
@@ -163,8 +158,8 @@ function renderRemateCard(r, index) {
             style="background:var(--color-white); border-radius:4px; box-shadow:0 15px 40px rgba(0,0,0,0.04); padding:50px; margin-bottom:40px; text-align:center;">
             ${imagenHTML}
             <span style="display:inline-block; margin-bottom:12px; padding:4px 12px; border-radius:2px; font-size:0.8rem; font-weight:600; text-transform:uppercase; background:${estadoInfo.color}; color:#fff;">${estadoInfo.texto}</span>
-            <h3 style="font-size:1.5rem; margin-bottom:10px;">${r.nombre}</h3>
-            <h5 class="accent-gold" style="margin-bottom:20px; font-weight:500;">${r.ubicacion || ''}</h5>
+            <h3 style="font-size:1.5rem; margin-bottom:10px;">${esc(r.nombre)}</h3>
+            <h5 class="accent-gold" style="margin-bottom:20px; font-weight:500;">${esc(r.ubicacion)}</h5>
             <div style="display:flex; justify-content:center; gap:40px; flex-wrap:wrap; margin-bottom:10px;">
                 <div>
                     <div style="font-size:0.8rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Fecha del remate</div>
