@@ -310,6 +310,10 @@ Tarifa extra:   $15.000 CLP/hora (fuera de alcance, por escrito)
 ## PRIMER PASO DE CADA SESIÓN
 
 1. Leer este .md completo.
-2. Confirmar en qué Hito estamos y si el hito anterior está PAGADO.
-3. Si el pago no está acreditado → NO escribir código. Avisar a Gueremy.
-4. Si está acreditado → tomar la siguiente checkbox sin marcar del hito actual.
+2. **Leer `ESTADO.md`** — tiene el estado técnico exacto, el mapa de ramas
+   (OJO: no hay rama `main`; la principal es `claude/repo-setup-database-mhgb8x`
+   y `feature/remates` está cotizada aparte, SIN mergear), el checklist de lo
+   que falta y el historial de decisiones.
+3. Confirmar en qué Hito estamos y si el hito anterior está PAGADO.
+4. Si el pago no está acreditado → NO escribir código. Avisar a Gueremy.
+5. Si está acreditado → tomar la siguiente checkbox sin marcar del hito actual.
