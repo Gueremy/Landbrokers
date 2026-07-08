@@ -363,7 +363,10 @@
 <div id="app">
     <div class="topbar">
         <h1>Landbrokers Admin</h1>
-        <button onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        <div style="display:flex; gap:8px;">
+            <button onclick="openModalPassword()"><i class="fa-solid fa-key"></i> Cambiar clave</button>
+            <button onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
     </div>
 
     <div class="tabs">
@@ -424,6 +427,11 @@
                         <tr><td colspan="7" style="text-align:center; color:var(--color-muted); padding:40px;">Cargando...</td></tr>
                     </tbody>
                 </table>
+            </div>
+            <div id="leads-more" style="display:none; text-align:center; margin-top:16px;">
+                <button class="btn btn-outline" onclick="cargarMasLeads()">
+                    <i class="fa-solid fa-chevron-down"></i> Cargar más
+                </button>
             </div>
         </div>
     </div>
@@ -488,6 +496,31 @@
             </div>
         </div>
 
+        <!-- Datos comerciales -->
+        <div style="margin-top:20px; margin-bottom:8px; border-top:1px solid var(--color-border); padding-top:16px;">
+            <label style="font-weight:600; font-size:0.9rem;">Datos comerciales (opcionales, se muestran en la tarjeta)</label>
+        </div>
+        <div class="form-grid">
+            <div class="form-row">
+                <label>Precio desde (CLP)</label>
+                <input type="number" id="p-precio-desde" placeholder="12500000" min="0">
+            </div>
+            <div class="form-row">
+                <label>Superficie de lotes</label>
+                <input type="text" id="p-superficie" placeholder="5.000 – 10.000 m²">
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="form-row">
+                <label>Lotes totales</label>
+                <input type="number" id="p-lotes-totales" placeholder="24" min="0">
+            </div>
+            <div class="form-row">
+                <label>Lotes disponibles</label>
+                <input type="number" id="p-lotes-disponibles" placeholder="18" min="0">
+            </div>
+        </div>
+
         <!-- Features -->
         <div style="margin-top:20px; margin-bottom:8px;">
             <label style="font-weight:600; font-size:0.9rem;">Características / Features</label>
@@ -521,6 +554,31 @@
     </div>
 </div>
 
+<!-- Modal Cambiar Clave -->
+<div id="modal-password" class="modal-overlay">
+    <div class="modal" style="max-width:420px;">
+        <h2>Cambiar contraseña</h2>
+        <div class="form-row">
+            <label>Contraseña actual</label>
+            <input type="password" id="pw-actual" autocomplete="current-password">
+        </div>
+        <div class="form-row">
+            <label>Nueva contraseña (mínimo 8 caracteres)</label>
+            <input type="password" id="pw-nueva" autocomplete="new-password">
+        </div>
+        <div class="form-row">
+            <label>Repetir nueva contraseña</label>
+            <input type="password" id="pw-repetir" autocomplete="new-password">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModalPassword()">Cancelar</button>
+            <button class="btn btn-primary" onclick="cambiarPassword()">
+                <i class="fa-solid fa-key"></i> Cambiar
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast -->
 <div id="msg-toast"></div>
 
@@ -534,6 +592,27 @@ function clearToken() { localStorage.removeItem('lb_token'); }
 
 function authHeader() {
     return { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' };
+}
+
+// Escapa HTML antes de insertar datos en innerHTML.
+// Crítico en leads: su contenido lo escribe cualquier visitante de la web.
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+// "Refugio Puntra — Chiloé" → "refugio-puntra-chiloe"
+function slugify(texto) {
+    return texto
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 }
 
 function toast(msg, ok = true) {
@@ -617,14 +696,14 @@ function renderProyectos() {
     tbody.innerHTML = proyectosData.map(p => `
         <tr>
             <td>${p.orden}</td>
-            <td><strong>${p.nombre}</strong></td>
-            <td>${p.ubicacion || '—'}</td>
-            <td><span class="badge badge-${p.estado}">${p.estado}</span></td>
+            <td><strong>${esc(p.nombre)}</strong></td>
+            <td>${esc(p.ubicacion) || '—'}</td>
+            <td><span class="badge badge-${esc(p.estado)}">${esc(p.estado)}</span></td>
             <td>
                 <button class="btn btn-outline btn-sm" onclick="openModalEditar('${p.id}')">
                     <i class="fa-solid fa-pen"></i> Editar
                 </button>
-                <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="eliminarProyecto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">
+                <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="eliminarProyecto('${p.id}')">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </td>
@@ -632,16 +711,28 @@ function renderProyectos() {
     `).join('');
 }
 
+// El slug se autogenera desde el nombre mientras el usuario no lo haya tocado a mano
+let slugEditadoAMano = false;
+
+document.getElementById('p-slug').addEventListener('input', () => { slugEditadoAMano = true; });
+document.getElementById('p-nombre').addEventListener('input', (e) => {
+    const esNuevo = !document.getElementById('proyecto-id').value;
+    if (esNuevo && !slugEditadoAMano) {
+        document.getElementById('p-slug').value = slugify(e.target.value);
+    }
+});
+
 function openModalCrear() {
     document.getElementById('modal-title').textContent = 'Nuevo Proyecto';
     document.getElementById('proyecto-id').value = '';
-    ['nombre','slug','ubicacion','descripcion','url-externa','lat','lng'].forEach(f => {
+    ['nombre','slug','ubicacion','descripcion','url-externa','lat','lng','precio-desde','superficie','lotes-totales','lotes-disponibles'].forEach(f => {
         document.getElementById(`p-${f}`).value = '';
     });
     document.getElementById('p-estado').value = 'activo';
     document.getElementById('p-orden').value = '';
     document.getElementById('features-list').innerHTML = '';
     document.getElementById('imagenes-section').style.display = 'none';
+    slugEditadoAMano = false;
     addFeatureRow();
     document.getElementById('modal-proyecto').classList.add('open');
 }
@@ -663,6 +754,11 @@ async function openModalEditar(id) {
         document.getElementById('p-url-externa').value = p.url_externa || '';
         document.getElementById('p-lat').value = p.gps_lat ?? '';
         document.getElementById('p-lng').value = p.gps_lng ?? '';
+        document.getElementById('p-precio-desde').value = p.precio_desde ?? '';
+        document.getElementById('p-superficie').value = p.superficie || '';
+        document.getElementById('p-lotes-totales').value = p.lotes_totales ?? '';
+        document.getElementById('p-lotes-disponibles').value = p.lotes_disponibles ?? '';
+        slugEditadoAMano = true; // en edición nunca pisar el slug automáticamente
 
         const fl = document.getElementById('features-list');
         fl.innerHTML = '';
@@ -692,8 +788,8 @@ function addFeatureRow(titulo = '', descripcion = '', featureId = '') {
     row.className = 'feature-row';
     row.dataset.featureId = featureId;
     row.innerHTML = `
-        <input type="text" placeholder="Título" value="${titulo}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
-        <input type="text" placeholder="Descripción" value="${descripcion}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
+        <input type="text" placeholder="Título" value="${esc(titulo)}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
+        <input type="text" placeholder="Descripción" value="${esc(descripcion)}" style="padding:8px 10px; border:1px solid var(--color-border); border-radius:4px; font-family:var(--font-body);">
         <button class="btn btn-danger btn-sm" onclick="this.closest('.feature-row').remove()">
             <i class="fa-solid fa-xmark"></i>
         </button>
@@ -713,6 +809,10 @@ async function guardarProyecto() {
         url_externa: document.getElementById('p-url-externa').value.trim() || null,
         gps_lat: parseFloat(document.getElementById('p-lat').value) || null,
         gps_lng: parseFloat(document.getElementById('p-lng').value) || null,
+        precio_desde: parseFloat(document.getElementById('p-precio-desde').value) || null,
+        superficie: document.getElementById('p-superficie').value.trim() || null,
+        lotes_totales: parseInt(document.getElementById('p-lotes-totales').value) || null,
+        lotes_disponibles: parseInt(document.getElementById('p-lotes-disponibles').value) || null,
     };
 
     if (!body.nombre || !body.slug) {
@@ -729,29 +829,20 @@ async function guardarProyecto() {
 
         const proyId = data.id;
 
-        // Guardar features: si es edición, borrar las existentes primero para evitar duplicados
-        const rows = document.querySelectorAll('#features-list .feature-row');
-        if (id) {
-            for (const row of rows) {
-                const fId = row.dataset.featureId;
-                if (fId) {
-                    await fetch(`${API}/admin/proyectos/${proyId}/features/${fId}`, {
-                        method: 'DELETE',
-                        headers: authHeader()
-                    });
-                }
-            }
-        }
-        for (let i = 0; i < rows.length; i++) {
-            const inputs = rows[i].querySelectorAll('input');
-            const titulo = inputs[0].value.trim();
-            const descripcion = inputs[1].value.trim();
-            if (!titulo) continue;
-            await fetch(`${API}/admin/proyectos/${proyId}/features`, {
-                method: 'POST',
-                headers: authHeader(),
-                body: JSON.stringify({ titulo, descripcion, orden: i })
-            });
+        // Features: una sola llamada que reemplaza el set completo (atómico, sin duplicados)
+        const features = [...document.querySelectorAll('#features-list .feature-row')].map(row => {
+            const inputs = row.querySelectorAll('input');
+            return { titulo: inputs[0].value.trim(), descripcion: inputs[1].value.trim() };
+        }).filter(f => f.titulo);
+
+        const fRes = await fetch(`${API}/admin/proyectos/${proyId}/features`, {
+            method: 'PUT',
+            headers: authHeader(),
+            body: JSON.stringify({ features })
+        });
+        if (!fRes.ok) {
+            const fErr = await fRes.json();
+            throw new Error(fErr.error || 'Proyecto guardado pero falló el guardado de características');
         }
 
         toast(id ? 'Proyecto actualizado' : 'Proyecto creado — ahora puedes editar las imágenes');
@@ -762,7 +853,8 @@ async function guardarProyecto() {
     }
 }
 
-async function eliminarProyecto(id, nombre) {
+async function eliminarProyecto(id) {
+    const nombre = proyectosData.find(p => p.id === id)?.nombre || 'este proyecto';
     if (!confirm(`¿Eliminar el proyecto "${nombre}"? Esta acción no se puede deshacer.`)) return;
     try {
         const res = await fetch(`${API}/admin/proyectos/${id}`, { method: 'DELETE', headers: authHeader() });
@@ -855,16 +947,35 @@ async function deleteImagen(proyId, imgId) {
     }
 }
 
-// ── Leads ──
+// ── Leads (paginados de a 100) ──
+const LEADS_PAGE = 100;
+let leadsCargados = [];
+let leadsTotal = 0;
+
 async function loadLeads() {
+    leadsCargados = [];
+    await fetchLeadsPage(0);
+}
+
+async function cargarMasLeads() {
+    await fetchLeadsPage(leadsCargados.length);
+}
+
+async function fetchLeadsPage(offset) {
     try {
-        const res = await fetch(`${API}/admin/leads`, { headers: authHeader() });
+        const res = await fetch(`${API}/admin/leads?limit=${LEADS_PAGE}&offset=${offset}`, { headers: authHeader() });
         if (res.status === 401) { logout(); return; }
-        const leads = await res.json();
-        renderLeads(leads);
-        const nuevos = leads.filter(l => !l.leido).length;
+        const data = await res.json();
+
+        leadsCargados = offset === 0 ? data.leads : leadsCargados.concat(data.leads);
+        leadsTotal = data.total || 0;
+        renderLeads(leadsCargados);
+
+        document.getElementById('leads-more').style.display =
+            leadsCargados.length < leadsTotal ? 'block' : 'none';
+
         const badge = document.getElementById('leads-badge');
-        if (nuevos > 0) { badge.textContent = nuevos; badge.style.display = 'inline'; }
+        if (data.no_leidos > 0) { badge.textContent = data.no_leidos; badge.style.display = 'inline'; }
         else { badge.style.display = 'none'; }
     } catch {
         toast('Error cargando leads', false);
@@ -877,16 +988,18 @@ function renderLeads(leads) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--color-muted);padding:40px;">Sin consultas aún.</td></tr>';
         return;
     }
+    // IMPORTANTE: todos los campos van escapados con esc() — este contenido
+    // lo escribe cualquier visitante anónimo de la web (riesgo de XSS almacenado).
     tbody.innerHTML = leads.map(l => {
         const fecha = new Date(l.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
         return `
             <tr style="${!l.leido ? 'font-weight:600;' : ''}">
                 <td>${fecha}</td>
-                <td>${l.nombre}</td>
-                <td><a href="mailto:${l.email}">${l.email}</a></td>
-                <td>${l.telefono || '—'}</td>
-                <td>${l.proyectos?.nombre || '—'}</td>
-                <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${(l.mensaje||'').replace(/"/g,'&quot;')}">${l.mensaje || '—'}</td>
+                <td>${esc(l.nombre)}</td>
+                <td><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></td>
+                <td>${esc(l.telefono) || '—'}</td>
+                <td>${esc(l.proyectos?.nombre) || '—'}</td>
+                <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(l.mensaje)}">${esc(l.mensaje) || '—'}</td>
                 <td>
                     <span class="badge badge-${l.leido ? 'leido' : 'nuevo'}">${l.leido ? 'Leído' : 'Nuevo'}</span>
                     ${!l.leido ? `<button class="btn btn-outline btn-sm" style="margin-left:6px;" onclick="marcarLeido('${l.id}')">Marcar leído</button>` : ''}
@@ -909,9 +1022,46 @@ async function marcarLeido(id) {
     }
 }
 
-// Cerrar modal al hacer click fuera
+// ── Cambiar contraseña ──
+function openModalPassword() {
+    ['pw-actual','pw-nueva','pw-repetir'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('modal-password').classList.add('open');
+}
+
+function closeModalPassword() {
+    document.getElementById('modal-password').classList.remove('open');
+}
+
+async function cambiarPassword() {
+    const actual = document.getElementById('pw-actual').value;
+    const nueva = document.getElementById('pw-nueva').value;
+    const repetir = document.getElementById('pw-repetir').value;
+
+    if (!actual || !nueva) { toast('Complete todos los campos', false); return; }
+    if (nueva.length < 8) { toast('La nueva contraseña debe tener al menos 8 caracteres', false); return; }
+    if (nueva !== repetir) { toast('Las contraseñas nuevas no coinciden', false); return; }
+
+    try {
+        const res = await fetch(`${API}/admin/password`, {
+            method: 'PUT',
+            headers: authHeader(),
+            body: JSON.stringify({ actual, nueva })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        toast('Contraseña actualizada');
+        closeModalPassword();
+    } catch (e) {
+        toast(e.message || 'Error al cambiar la contraseña', false);
+    }
+}
+
+// Cerrar modales al hacer click fuera
 document.getElementById('modal-proyecto').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
+});
+document.getElementById('modal-password').addEventListener('click', function(e) {
+    if (e.target === this) closeModalPassword();
 });
 </script>
 </body>
