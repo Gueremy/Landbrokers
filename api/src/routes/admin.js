@@ -2,14 +2,24 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const supabase = require('../db/supabase');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Frena fuerza bruta sobre el login: 10 intentos por IP cada 15 minutos
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de login. Espere 15 minutos.' },
+});
+
 // POST /admin/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'email y password requeridos' });
 
@@ -31,6 +41,33 @@ router.post('/login', async (req, res) => {
 // Todas las rutas de acá en adelante requieren JWT
 router.use(auth);
 
+// PUT /admin/password — cambiar contraseña del admin logueado
+router.put('/password', async (req, res) => {
+  const { actual, nueva } = req.body;
+  if (!actual || !nueva) return res.status(400).json({ error: 'actual y nueva son requeridos' });
+  if (nueva.length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+
+  const { data: user, error } = await supabase
+    .from('admin_user')
+    .select('id, password_hash')
+    .eq('id', req.admin.id)
+    .single();
+
+  if (error || !user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+  const valid = await bcrypt.compare(actual, user.password_hash);
+  if (!valid) return res.status(401).json({ error: 'La contraseña actual no es correcta' });
+
+  const password_hash = await bcrypt.hash(nueva, 10);
+  const { error: updateError } = await supabase
+    .from('admin_user')
+    .update({ password_hash })
+    .eq('id', user.id);
+
+  if (updateError) return res.status(500).json({ error: updateError.message });
+  res.json({ ok: true });
+});
+
 // GET /admin/proyectos — todos (sin filtro de estado)
 router.get('/proyectos', async (req, res) => {
   const { data, error } = await supabase
@@ -44,11 +81,20 @@ router.get('/proyectos', async (req, res) => {
 
 // POST /admin/proyectos — crear proyecto
 router.post('/proyectos', async (req, res) => {
-  const { slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden } = req.body;
+  const {
+    slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden,
+    precio_desde, superficie, lotes_totales, lotes_disponibles,
+  } = req.body;
 
   const { data, error } = await supabase
     .from('proyectos')
-    .insert([{ slug, nombre, ubicacion, descripcion, estado: estado || 'activo', gps_lat, gps_lng, url_externa, orden: orden || 0 }])
+    .insert([{
+      slug, nombre, ubicacion, descripcion, estado: estado || 'activo', gps_lat, gps_lng, url_externa, orden: orden || 0,
+      precio_desde: precio_desde ?? null,
+      superficie: superficie || null,
+      lotes_totales: lotes_totales ?? null,
+      lotes_disponibles: lotes_disponibles ?? null,
+    }])
     .select()
     .single();
 
@@ -58,11 +104,21 @@ router.post('/proyectos', async (req, res) => {
 
 // PUT /admin/proyectos/:id — editar proyecto
 router.put('/proyectos/:id', async (req, res) => {
-  const { slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden } = req.body;
+  const {
+    slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden,
+    precio_desde, superficie, lotes_totales, lotes_disponibles,
+  } = req.body;
 
   const { data, error } = await supabase
     .from('proyectos')
-    .update({ slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden, updated_at: new Date().toISOString() })
+    .update({
+      slug, nombre, ubicacion, descripcion, estado, gps_lat, gps_lng, url_externa, orden,
+      precio_desde: precio_desde ?? null,
+      superficie: superficie || null,
+      lotes_totales: lotes_totales ?? null,
+      lotes_disponibles: lotes_disponibles ?? null,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', req.params.id)
     .select()
     .single();
@@ -126,6 +182,36 @@ router.delete('/proyectos/:id/imagenes/:imgId', async (req, res) => {
   res.json({ ok: true });
 });
 
+// PUT /admin/proyectos/:id/features — reemplazar TODAS las features en una sola operación.
+// Evita el borrado/inserción uno a uno desde el panel (que podía quedar a medias).
+router.put('/proyectos/:id/features', async (req, res) => {
+  const { features } = req.body;
+  if (!Array.isArray(features)) return res.status(400).json({ error: 'features debe ser un array' });
+
+  const limpias = features
+    .filter((f) => f && f.titulo && f.titulo.trim())
+    .map((f, i) => ({
+      proyecto_id: req.params.id,
+      titulo: f.titulo.trim(),
+      descripcion: (f.descripcion || '').trim(),
+      orden: i,
+    }));
+
+  const { error: delError } = await supabase
+    .from('proyecto_features')
+    .delete()
+    .eq('proyecto_id', req.params.id);
+
+  if (delError) return res.status(500).json({ error: delError.message });
+
+  if (limpias.length) {
+    const { error: insError } = await supabase.from('proyecto_features').insert(limpias);
+    if (insError) return res.status(500).json({ error: insError.message });
+  }
+
+  res.json({ ok: true, count: limpias.length });
+});
+
 // POST /admin/proyectos/:id/features — agregar feature
 router.post('/proyectos/:id/features', async (req, res) => {
   const { titulo, descripcion, orden } = req.body;
@@ -166,15 +252,25 @@ router.delete('/proyectos/:id/features/:fId', async (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /admin/leads — ver todos los leads
+// GET /admin/leads — paginado (?limit=&offset=) + total de no leídos
 router.get('/leads', async (req, res) => {
-  const { data, error } = await supabase
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  const offset = parseInt(req.query.offset) || 0;
+
+  const { data, error, count } = await supabase
     .from('leads')
-    .select('id, proyecto_id, nombre, email, telefono, mensaje, created_at, leido, proyectos(nombre)')
-    .order('created_at', { ascending: false });
+    .select('id, proyecto_id, nombre, email, telefono, mensaje, created_at, leido, proyectos(nombre)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+
+  const { count: noLeidos } = await supabase
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('leido', false);
+
+  res.json({ leads: data, total: count, no_leidos: noLeidos || 0, limit, offset });
 });
 
 // PATCH /admin/leads/:id/leido — marcar como leído/no leído
